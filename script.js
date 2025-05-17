@@ -33,8 +33,8 @@ let messageQueue = [];
 let messageLog = [];
 let messageActive = false;
 
-function showNotice(text) {
-  messageQueue.push(text);
+function showNotice(text, callback) {
+  messageQueue.push({ text, callback });
   messageLog.push(text);
   updateHistory();
   if (!messageActive) showNextMessage();
@@ -47,7 +47,7 @@ function showNextMessage() {
   }
 
   messageActive = true;
-  const text = messageQueue.shift();
+  const { text, callback } = messageQueue.shift();
   noticeText.textContent = text;
   actionNotice.style.display = 'block';
   actionNotice.classList.add('fade');
@@ -55,6 +55,7 @@ function showNextMessage() {
     actionNotice.classList.remove('fade');
     actionNotice.style.display = 'none';
     messageActive = false;
+    if (callback) callback();
     showNextMessage();
   }, 2000);
 }
@@ -150,9 +151,10 @@ function handleMove(player, steps) {
     const e = events[Math.floor(Math.random() * events.length)];
     const amt = parseInt(e);
     player.money += amt;
-    showNotice(`Evento para ${player.emoji}: ${e}`);
-    updateMoney();
-    setTimeout(nextTurn, 1500);
+    showNotice(`Evento para ${player.emoji}: ${e}`, () => {
+      updateMoney();
+      setTimeout(nextTurn, 500);
+    });
   } else {
     updateMoney();
     setTimeout(nextTurn, 1500);
@@ -163,38 +165,44 @@ function transact(player, pos) {
   const prop = properties[pos];
   if (prop.owner === null) {
     if (player.money < prop.price) {
-      showNotice(`Jogador ${player.id + 1} não tem dinheiro para comprar a casa ${pos}.`);
-      return setTimeout(nextTurn, 1000);
+      showNotice(`Jogador ${player.id + 1} não tem dinheiro para comprar a casa ${pos}.`, () => {
+        setTimeout(nextTurn, 1000);
+      });
+      return;
     }
 
-    modalText.textContent = `Jogador ${player.id + 1}, deseja comprar a casa ${pos} por $${prop.price}?`;
-    buyModal.style.display = 'block';
-    rollDiceBtn.disabled = true;
+    showNotice(`Jogador ${player.id + 1} pode comprar a casa ${pos} por $${prop.price}.`, () => {
+      modalText.textContent = `Jogador ${player.id + 1}, deseja comprar a casa ${pos} por $${prop.price}?`;
+      buyModal.style.display = 'block';
+      rollDiceBtn.disabled = true;
 
-    buyYesBtn.onclick = () => {
-      buyModal.style.display = 'none';
-      rollDiceBtn.disabled = false;
-      buyProperty(player, pos);
-      showNotice(`Jogador ${player.id + 1} comprou a casa ${pos}!`);
-      updateMoney();
-      updatePositions();
-      setTimeout(nextTurn, 500);
-    };
+      buyYesBtn.onclick = () => {
+        buyModal.style.display = 'none';
+        rollDiceBtn.disabled = false;
+        buyProperty(player, pos);
+        showNotice(`Jogador ${player.id + 1} comprou a casa ${pos}!`, () => {
+          updateMoney();
+          updatePositions();
+          setTimeout(nextTurn, 500);
+        });
+      };
 
-    buyNoBtn.onclick = () => {
-      buyModal.style.display = 'none';
-      rollDiceBtn.disabled = false;
-      showNotice(`Jogador ${player.id + 1} recusou a casa ${pos}.`);
-      setTimeout(nextTurn, 500);
-    };
-
+      buyNoBtn.onclick = () => {
+        buyModal.style.display = 'none';
+        rollDiceBtn.disabled = false;
+        showNotice(`Jogador ${player.id + 1} recusou a casa ${pos}.`, () => {
+          setTimeout(nextTurn, 500);
+        });
+      };
+    });
   } else if (prop.owner !== player.id) {
     const rent = Math.floor(prop.price * 0.2);
     player.money -= rent;
     players[prop.owner].money += rent;
-    showNotice(`${player.emoji} pagou $${rent} de aluguel para ${players[prop.owner].emoji}.`);
-    updateMoney();
-    setTimeout(nextTurn, 1000);
+    showNotice(`${player.emoji} pagou $${rent} de aluguel para ${players[prop.owner].emoji}.`, () => {
+      updateMoney();
+      setTimeout(nextTurn, 1000);
+    });
   } else {
     setTimeout(nextTurn, 1000);
   }
