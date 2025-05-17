@@ -1,0 +1,146 @@
+* {
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #001f33;
+  color: #eee;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+}
+
+header {
+  margin: 20px 0;
+  text-align: center;
+  color: #00eaff;
+  text-shadow: 0 0 6px #00eaff;
+}
+
+#game-container {
+  display: flex;
+  gap: 20px;
+  max-width: 1200px;
+  width: 90vw;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+#board {
+  display: grid;
+  grid-template-columns: repeat(12, 100px);
+  grid-template-rows: repeat(8, 80px);
+  gap: 6px;
+  background: #00334d;
+  padding: 10px;
+  border-radius: 12px;
+  position: relative;
+  width: calc(12 * 100px + 11 * 6px + 20px);
+  height: calc(8 * 80px + 7 * 6px + 20px);
+  box-sizing: content-box;
+}
+
+.tile {
+  width: 100px;
+  height: 80px;
+  background: #005577;
+  border: 2px solid #00aaff;
+  border-radius: 8px;
+  color: #ccf5ff;
+  font-size: 12px;
+  text-align: center;
+  padding: 4px 2px;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.tile small {
+  font-size: 10px;
+  margin-top: 4px;
+  color: #99ddff;
+}
+
+.player {
+  position: absolute;
+  font-size: 28px;
+  transition: top 0.3s ease, left 0.3s ease;
+  pointer-events: none;
+  user-select: none;
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
+  text-align: center;
+}
+
+#sidebar {
+  width: 250px;
+  background: #002233;
+  padding: 15px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #00eaff;
+  box-shadow: 0 0 12px #00eaff88;
+  font-size: 16px;
+}
+
+#turn-message {
+  font-weight: 700;
+  font-size: 20px;
+  margin-bottom: 15px;
+  text-align: center;
+  min-height: 56px;
+}
+
+#roll-dice {
+  font-size: 22px;
+  padding: 12px 0;
+  width: 226px;
+  height: 78px;
+  border: none;
+  border-radius: 5%;
+  background: #00aaff;
+  color: #001f33;
+  cursor: pointer;
+  box-shadow: 0 0 10px #00aaffaa;
+  transition: background-color 0.3s ease;
+  position: absolute;
+  top: 58%;
+  left: 45%;
+  transform: translate(-50%, -50%);
+}
+
+
+#roll-dice:hover {
+  background: #0099dd;
+}
+
+#dice-result {
+  font-weight: 700;
+  font-size: 18px;
+  margin: 12px 0 18px 0;
+  min-height: 24px;
+  color: #ffaa00;
+  text-align: center;
+}
+
+#money-board {
+  width: 100%;
+}
+
+.player-money {
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.player-emoji {
+  margin-right: 8px;
+  font-size: 20px;
+}
