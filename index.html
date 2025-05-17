@@ -1,40 +1,43 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Metametropolis - Cidade do Futuro</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Metametropolis - Cidade do Futuro</title>
+    <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
 
-  <h1>Metametropolis - Cidade do Futuro</h1>
+    <h1>Metametropolis - Cidade do Futuro</h1>
 
-  <div id="game-container">
-    <div id="board">
-      <!-- Botão de dado centralizado -->
-      <button id="roll-dice">🎲</button>
-    </div>
+    <div id="game-container">
+        <div id="board">
+            <!-- Botão de dado centralizado -->
+            <button id="roll-dice">🎲</button>
+        </div>
 
-    <div id="side-panel">
-      <div id="turn-message">Carregando...</div>
-      <div id="dice-result"></div>
-      <div id="money-board"></div>
-    </div>
-  </div>
+        <div id="side-panel">
+            <div id="turn-message">Carregando...</div>
+            <div id="dice-result"></div>
+            <div id="money-board"></div>
+            <div id="history"></div>
+        </div>
 
-  <!-- Modal de compra -->
-  <div id="buy-modal">
-    <p id="modal-text"></p>
-    <button id="buy-yes">Comprar</button>
-    <button id="buy-no">Cancelar</button>
-  </div>
+        <!-- Modal de compra -->
+        <div id="buy-modal">
+            <p id="modal-text"></p>
+            <button id="buy-yes">Comprar</button>
+            <button id="buy-no">Cancelar</button>
+        </div>
 
-  <!-- Notificação de ação -->
-  <div id="action-notice">
-    <p id="notice-text"></p>
-  </div>
+        <!-- Notificação de ação e turno -->
+        <div id="action-notice">
+            <p id="notice-text"></p>
+        </div>
 
-  <script src="script.js"></script>
+        <script src="script.js"></script>
 </body>
+
 </html>

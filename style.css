@@ -60,17 +60,42 @@ h1 {
   background: #002233;
   padding: 15px;
   border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-#turn-message {
-  font-size: 18px;
+#dice-result {
+  text-align: center;
   margin-bottom: 10px;
+}
+
+#money-board {
+  background: #00334d;
+  padding: 10px;
+  border-radius: 12px;
+}
+
+#money-board .player-money {
+  margin-bottom: 8px;
+}
+
+#history {
+  background: #00334d;
+  color: #ccf5ff;
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 8px;
+  height: 200px;
+  overflow-y: auto;
+  font-size: 14px;
+  text-align: left;
 }
 
 #roll-dice {
   position: absolute;
   top: 50%;
-  left: 50%;
+  left: 35%;
   transform: translate(-50%, -50%);
   font-size: 16px;
   padding: 8px 12px;
@@ -79,24 +104,20 @@ h1 {
   background: #00aaff;
   color: #001f33;
   cursor: pointer;
+  box-shadow: 0 0 10px #00aaff;
+  transition: background 0.3s, transform 0.3s;
 }
 
-
-#dice-result {
-  text-align: center;
-  margin-bottom: 10px;
+#roll-dice:hover {
+  background: #0088cc;
+  transform: translate(-50%, -50%) scale(1.05);
 }
 
-#money-board .player-money {
-  margin-bottom: 8px;
-}
-
-#buy-modal,
-#action-notice {
+#buy-modal {
   position: fixed;
   top: 50%;
   left: 50%;
-  width: 280px;
+  width: 300px;
   transform: translate(-50%, -50%);
   background: #004466;
   padding: 20px;
@@ -104,13 +125,27 @@ h1 {
   box-shadow: 0 0 15px #00aaff;
   text-align: center;
   display: none;
+}
+
+#action-notice {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #004466;
+  padding: 10px 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 15px #00aaff;
+  text-align: center;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
   z-index: 1000;
 }
 
-#buy-modal p,
-#action-notice p {
-  margin-bottom: 15px;
-  font-size: 16px;
+#action-notice.fade {
+  display: block;
+  opacity: 1;
 }
 
 #buy-modal button {
@@ -129,15 +164,4 @@ h1 {
 #buy-no {
   background: #aa0000;
   color: #fff;
-}
-
-#action-notice {
-  animation: fadeInOut 10s forwards;
-}
-
-@keyframes fadeInOut {
-  0% { opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { opacity: 0; }
 }
