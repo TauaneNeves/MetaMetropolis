@@ -21,7 +21,7 @@ for (let i = 0; i < totalTiles; i++) {
 const eventIndexes = [...Array(totalTiles).keys()].filter(i => i % 5 === 0 && i !== 0);
 
 const players = [
-  { id: 0, emoji: '👾', position: 0, money: 1500, properties: [] },
+  { id: 0, emoji: '👾', position: 0, money: 9, properties: [] },
   { id: 1, emoji: '🚀', position: 0, money: 1500, properties: [] }
 ];
 
@@ -131,6 +131,20 @@ function updateMoney() {
 function rollDice() {
   return Math.floor(Math.random() * 6) + 1;
 }
+//função para verificar se o jogador venceu
+function checkVictory() {
+  const defeated = players.find(p => p.money <= 0);
+  if (defeated) {
+    const winner = players.find(p => p.id !== defeated.id);
+    document.getElementById('winner-message').textContent = `🎉 Jogador ${winner.id + 1} ${winner.emoji} venceu o jogo!`;
+    document.getElementById('victory-screen').style.display = 'flex';
+    rollDiceBtn.disabled = true;
+    rollDiceBtn.style.display = 'none';
+    return true;
+  }
+  return false;
+}
+
 
 function nextTurn() {
   currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
@@ -153,11 +167,15 @@ function handleMove(player, steps) {
     player.money += amt;
     showNotice(`Evento para ${player.emoji}: ${e}`, () => {
       updateMoney();
-      setTimeout(nextTurn, 500);
+      if (!checkVictory()) {
+        setTimeout(nextTurn, 500);
+      }
     });
   } else {
     updateMoney();
-    setTimeout(nextTurn, 1500);
+    if (!checkVictory()) {
+      setTimeout(nextTurn, 1500);
+    }
   }
 }
 
@@ -166,7 +184,9 @@ function transact(player, pos) {
   if (prop.owner === null) {
     if (player.money < prop.price) {
       showNotice(`Jogador ${player.id + 1} não tem dinheiro para comprar a casa ${pos}.`, () => {
-        setTimeout(nextTurn, 1000);
+        if (!checkVictory()) {
+          setTimeout(nextTurn, 1000);
+        }
       });
       return;
     }
@@ -183,7 +203,9 @@ function transact(player, pos) {
         showNotice(`Jogador ${player.id + 1} comprou a casa ${pos}!`, () => {
           updateMoney();
           updatePositions();
-          setTimeout(nextTurn, 500);
+          if (!checkVictory()) {
+            setTimeout(nextTurn, 500);
+          }
         });
       };
 
@@ -191,7 +213,9 @@ function transact(player, pos) {
         buyModal.style.display = 'none';
         rollDiceBtn.disabled = false;
         showNotice(`Jogador ${player.id + 1} recusou a casa ${pos}.`, () => {
-          setTimeout(nextTurn, 500);
+          if (!checkVictory()) {
+            setTimeout(nextTurn, 500);
+          }
         });
       };
     });
@@ -201,7 +225,9 @@ function transact(player, pos) {
     players[prop.owner].money += rent;
     showNotice(`${player.emoji} pagou $${rent} de aluguel para ${players[prop.owner].emoji}.`, () => {
       updateMoney();
-      setTimeout(nextTurn, 1000);
+      if (!checkVictory()) {
+        setTimeout(nextTurn, 1000);
+      }
     });
   } else {
     setTimeout(nextTurn, 1000);
@@ -215,6 +241,7 @@ function buyProperty(player, pos) {
   player.properties.push(pos);
   updateMoney();
   updatePositions();
+  checkVictory();
 }
 
 createBoard();
