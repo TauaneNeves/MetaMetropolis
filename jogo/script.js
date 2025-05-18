@@ -1,50 +1,56 @@
-const board = document.getElementById('board');
-const moneyBoard = document.getElementById('money-board');
-const rollDiceBtn = document.getElementById('roll-dice');
-const diceResult = document.getElementById('dice-result');
-const turnMessage = document.getElementById('turn-message');
-const buyModal = document.getElementById('buy-modal');
-const modalText = document.getElementById('modal-text');
-const buyYesBtn = document.getElementById('buy-yes');
-const buyNoBtn = document.getElementById('buy-no');
-const actionNotice = document.getElementById('action-notice');
-const noticeText = document.getElementById('notice-text');
-const historyBox = document.getElementById('history');
+// Seleciona os elementos principais do HTML
+const board = document.getElementById('board'); // tabuleiro do jogo
+const moneyBoard = document.getElementById('money-board'); // painel de dinheiro e propriedades dos jogadores
+const rollDiceBtn = document.getElementById('roll-dice'); // botão para rolar o dado
+const diceResult = document.getElementById('dice-result'); // área que mostra o resultado do dado
+const turnMessage = document.getElementById('turn-message'); // mensagem da vez do jogador
+const buyModal = document.getElementById('buy-modal'); // modal de compra de propriedade
+const modalText = document.getElementById('modal-text'); // texto dentro do modal
+const buyYesBtn = document.getElementById('buy-yes'); // botão de confirmar compra
+const buyNoBtn = document.getElementById('buy-no'); // botão de recusar compra
+const actionNotice = document.getElementById('action-notice'); // caixa de aviso de ação
+const noticeText = document.getElementById('notice-text'); // texto do aviso
+const historyBox = document.getElementById('history'); // histórico das ações anteriores
 
+// Definição das dimensões do tabuleiro
 const cols = 12, rows = 8;
-const totalTiles = (cols + rows - 2) * 2;
+const totalTiles = (cols + rows - 2) * 2; // total de casas no tabuleiro
+
+// Arrays e objetos auxiliares
 const icons = [];
-const properties = {};
+const properties = {}; // propriedades disponíveis no jogo
 for (let i = 0; i < totalTiles; i++) {
-  if (i % 5 !== 0) properties[i] = { price: 100 + i * 10, owner: null };
+  if (i % 5 !== 0) properties[i] = { price: 100 + i * 10, owner: null }; // define casas compráveis
 }
-const eventIndexes = [...Array(totalTiles).keys()].filter(i => i % 5 === 0 && i !== 0);
+const eventIndexes = [...Array(totalTiles).keys()].filter(i => i % 5 === 0 && i !== 0); // casas de evento
 
-const emojis = ['👾', '🚀', '🤖', '🛸']; // emojis para os jogadores
+const emojis = ['👾', '🚀', '🤖', '🛸']; // emojis dos jogadores
 
-// Pegando número de jogadores da localStorage; se não existir, padrão é 2
+// Obtém o número de jogadores da localStorage ou define padrão como 2
 const numPlayers = parseInt(localStorage.getItem('numPlayers')) || 2;
 
 const players = [];
 
+// Cria os jogadores
 for (let i = 0; i < numPlayers; i++) {
   players.push({
     id: i,
     emoji: emojis[i] || '🙂',
-    position: 0,
-    money: 1500,
-    properties: []
+    position: 0, // começa na casa 0
+    money: 1500, // dinheiro inicial
+    properties: [] // propriedades compradas
   });
 }
 
-let currentPlayerIndex = 0;
+let currentPlayerIndex = 0; // controla qual jogador está jogando
 
-const tiles = [], playerElems = [];
+const tiles = [], playerElems = []; // arrays que armazenam as casas e os elementos visuais dos jogadores
 
-let messageQueue = [];
-let messageLog = [];
-let messageActive = false;
+let messageQueue = []; // fila de mensagens a mostrar
+let messageLog = []; // histórico de mensagens
+let messageActive = false; // controla se uma mensagem está sendo exibida
 
+// Função para mostrar uma notificação com callback
 function showNotice(text, callback) {
   messageQueue.push({ text, callback });
   messageLog.push(text);
@@ -52,6 +58,7 @@ function showNotice(text, callback) {
   if (!messageActive) showNextMessage();
 }
 
+// Mostra a próxima mensagem da fila
 function showNextMessage() {
   if (messageQueue.length === 0) {
     messageActive = false;
@@ -72,10 +79,12 @@ function showNextMessage() {
   }, 2000);
 }
 
+// Atualiza o histórico de mensagens
 function updateHistory() {
   historyBox.innerHTML = messageLog.map(msg => `<div>${msg}</div>`).join('');
 }
 
+// Cria o tabuleiro com as casas numeradas
 function createBoard() {
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
@@ -104,6 +113,7 @@ function createBoard() {
   }
 }
 
+// Cria os elementos visuais dos jogadores
 function createPlayers() {
   players.forEach(p => {
     const el = document.createElement('div');
@@ -114,6 +124,7 @@ function createPlayers() {
   });
 }
 
+// Atualiza a posição dos jogadores no tabuleiro
 function updatePositions() {
   players.forEach(p => {
     const tile = tiles[p.position];
@@ -128,11 +139,15 @@ function updatePositions() {
   });
 }
 
+// Atualiza o painel de dinheiro e propriedades (com destaque para o jogador da vez)
 function updateMoney() {
   moneyBoard.innerHTML = '';
-  players.forEach(p => {
+  players.forEach((p, i) => {
     const d = document.createElement('div');
     d.className = 'player-money';
+    if (i === currentPlayerIndex) {
+      d.classList.add('active-player'); // destaque neon para o jogador da vez
+    }
     d.innerHTML = `<div class="player-name">${p.emoji} Jogador ${p.id + 1}</div>
                    <div>Dinheiro: $${p.money}</div>
                    <div>Props: ${p.properties.join(', ') || 'Nenhuma'}</div>`;
@@ -140,14 +155,15 @@ function updateMoney() {
   });
 }
 
+// Rola o dado (valor entre 1 e 6)
 function rollDice() {
   return Math.floor(Math.random() * 6) + 1;
 }
 
+// Verifica se algum jogador perdeu
 function checkVictory() {
   const defeated = players.find(p => p.money <= 0);
   if (defeated) {
-    // O vencedor é quem NÃO está falido
     const winner = players.find(p => p.id !== defeated.id);
     document.getElementById('winner-message').textContent = `🎉 Jogador ${winner.id + 1} ${winner.emoji} venceu o jogo!`;
     document.getElementById('victory-screen').style.display = 'flex';
@@ -158,15 +174,18 @@ function checkVictory() {
   return false;
 }
 
+// Passa a vez para o próximo jogador
 function nextTurn() {
   currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
   const cp = players[currentPlayerIndex];
   rollDiceBtn.disabled = false;
   rollDiceBtn.style.display = 'block';
   turnMessage.textContent = `Vez do Jogador ${cp.id + 1} ${cp.emoji}. Clique para rolar o dado.`;
+  updateMoney(); // atualiza o destaque do painel
   showNotice(`Jogador ${cp.id + 1} ${cp.emoji} vai jogar!`);
 }
 
+// Move o jogador e trata a ação da casa
 function handleMove(player, steps) {
   player.position = (player.position + steps) % totalTiles;
   updatePositions();
@@ -191,6 +210,7 @@ function handleMove(player, steps) {
   }
 }
 
+// Lida com transações ao cair em uma casa comprável
 function transact(player, pos) {
   const prop = properties[pos];
   if (prop.owner === null) {
@@ -246,6 +266,7 @@ function transact(player, pos) {
   }
 }
 
+// Realiza a compra da propriedade
 function buyProperty(player, pos) {
   const prop = properties[pos];
   player.money -= prop.price;
@@ -256,6 +277,7 @@ function buyProperty(player, pos) {
   checkVictory();
 }
 
+// Inicialização do jogo
 createBoard();
 createPlayers();
 updatePositions();
@@ -265,15 +287,25 @@ const currentPlayer = players[currentPlayerIndex];
 turnMessage.textContent = `Vez do Jogador ${currentPlayer.id + 1} ${currentPlayer.emoji}. Clique para rolar o dado.`;
 showNotice(`Jogador ${currentPlayer.id + 1} ${currentPlayer.emoji} vai jogar!`);
 
+// Evento ao clicar no botão de rolar dado
 rollDiceBtn.addEventListener('click', () => {
   rollDiceBtn.disabled = true;
-  const cp = players[currentPlayerIndex];
-  const r = rollDice();
-  diceResult.textContent = `Jogador ${cp.id + 1} tirou ${r}!`;
-  showNotice(`Jogador ${cp.id + 1} ${cp.emoji} jogou o dado e está esperando decisão...`);
-  handleMove(cp, r);
+  diceResult.textContent = '';
+  
+  const diceAnim = document.getElementById('dice-animation');
+  diceAnim.style.display = 'block';
+
+  setTimeout(() => {
+    const cp = players[currentPlayerIndex];
+    const r = rollDice();
+    diceAnim.style.display = 'none';
+    diceResult.textContent = `Jogador ${cp.id + 1} tirou ${r}!`;
+    showNotice(`Jogador ${cp.id + 1} ${cp.emoji} jogou o dado e está esperando decisão...`);
+    handleMove(cp, r);
+  }, 1500); // anima o dado por 1.5 segundos
 });
 
+// Fecha o modal se clicar fora dele
 buyModal.addEventListener('click', (e) => {
   if (e.target === buyModal) {
     buyModal.style.display = 'none';

@@ -55,6 +55,26 @@ h1 {
   pointer-events: none;
 }
 
+.player-money.active-player {
+  border: 2px solid #00eaff;
+  box-shadow: 0 0 12px #00eaff, 0 0 24px #00eaff;
+  animation: pulse 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 5px #00eaff, 0 0 10px #00eaff;
+  }
+  50% {
+    box-shadow: 0 0 15px #00eaff, 0 0 30px #00eaff;
+  }
+  100% {
+    box-shadow: 0 0 5px #00eaff, 0 0 10px #00eaff;
+  }
+}
+
+
 #side-panel {
   width: 250px;
   background: #002233;
@@ -201,4 +221,29 @@ h1 {
   border-radius: 8px;
   cursor: pointer;
   font-size: 16px;
+}
+
+#dice-animation {
+  font-size: 48px;
+  display: none;
+  animation: spin 1s infinite linear;
+  margin: 10px auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.arrow {
+  position: absolute;
+  font-size: 24px;
+  animation: bounce 1s infinite;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
