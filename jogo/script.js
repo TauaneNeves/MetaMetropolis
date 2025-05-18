@@ -20,10 +20,22 @@ for (let i = 0; i < totalTiles; i++) {
 }
 const eventIndexes = [...Array(totalTiles).keys()].filter(i => i % 5 === 0 && i !== 0);
 
-const players = [
-  { id: 0, emoji: '👾', position: 0, money: 9, properties: [] },
-  { id: 1, emoji: '🚀', position: 0, money: 1500, properties: [] }
-];
+const emojis = ['👾', '🚀', '🤖', '🛸']; // emojis para os jogadores
+
+// Pegando número de jogadores da localStorage; se não existir, padrão é 2
+const numPlayers = parseInt(localStorage.getItem('numPlayers')) || 2;
+
+const players = [];
+
+for (let i = 0; i < numPlayers; i++) {
+  players.push({
+    id: i,
+    emoji: emojis[i] || '🙂',
+    position: 0,
+    money: 1500,
+    properties: []
+  });
+}
 
 let currentPlayerIndex = 0;
 
@@ -131,10 +143,11 @@ function updateMoney() {
 function rollDice() {
   return Math.floor(Math.random() * 6) + 1;
 }
-//função para verificar se o jogador venceu
+
 function checkVictory() {
   const defeated = players.find(p => p.money <= 0);
   if (defeated) {
+    // O vencedor é quem NÃO está falido
     const winner = players.find(p => p.id !== defeated.id);
     document.getElementById('winner-message').textContent = `🎉 Jogador ${winner.id + 1} ${winner.emoji} venceu o jogo!`;
     document.getElementById('victory-screen').style.display = 'flex';
@@ -144,7 +157,6 @@ function checkVictory() {
   }
   return false;
 }
-
 
 function nextTurn() {
   currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
@@ -248,7 +260,10 @@ createBoard();
 createPlayers();
 updatePositions();
 updateMoney();
-nextTurn();
+
+const currentPlayer = players[currentPlayerIndex];
+turnMessage.textContent = `Vez do Jogador ${currentPlayer.id + 1} ${currentPlayer.emoji}. Clique para rolar o dado.`;
+showNotice(`Jogador ${currentPlayer.id + 1} ${currentPlayer.emoji} vai jogar!`);
 
 rollDiceBtn.addEventListener('click', () => {
   rollDiceBtn.disabled = true;
