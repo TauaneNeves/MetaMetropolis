@@ -16,6 +16,32 @@ const historyBox = document.getElementById('history'); // histórico das ações
 const cols = 12, rows = 8;
 const totalTiles = (cols + rows - 2) * 2; // total de casas no tabuleiro
 
+// Adiciona os ícones ao tabuleiro
+window.addEventListener('DOMContentLoaded', () => {
+  let settings;
+  try {
+    settings = JSON.parse(localStorage.getItem('gameSettings'));
+  } catch (error) {
+    console.error('Failed to parse gameSettings from localStorage:', error);
+    settings = null;
+  }
+  const sidebar = document.querySelector('.sidebar');
+
+  if (settings && settings.players) {
+    sidebar.innerHTML = ''; // Limpa o que estava fixo
+// Adiciona os ícones dos jogadores 
+    settings.players.forEach((type, index) => {
+      const icon = document.createElement('div');
+      icon.classList.add('icon');
+      icon.textContent = type.toUpperCase();
+      sidebar.appendChild(icon);
+    });
+  } else {
+    console.error('Configurações não encontradas.');
+  }
+});
+
+
 // Arrays e objetos auxiliares
 const icons = [];
 const properties = {}; // propriedades disponíveis no jogo
@@ -26,12 +52,21 @@ const eventIndexes = [...Array(totalTiles).keys()].filter(i => i % 5 === 0 && i 
 
 const emojis = ['👾', '🚀', '🤖', '🛸']; // emojis dos jogadores
 
-// Obtém o número de jogadores da localStorage ou define padrão como 2
-const numPlayers = parseInt(localStorage.getItem('numPlayers')) || 2;
+// Configura o número de jogadores conforme a configuração
+let numPlayers = 2; // número padrão de jogadores
+try {
+  const settings = JSON.parse(localStorage.getItem('gameSettings'));
+  if (settings && settings.numPlayers) {
+    numPlayers = Math.min(settings.numPlayers, emojis.length); // limita ao número de emojis disponíveis
+  }
+} catch (error) {
+  console.error('Failed to parse gameSettings from localStorage:', error);
+}
+
 
 const players = [];
 
-// Cria os jogadores
+// Cria os jogadores conforme numPlayers
 for (let i = 0; i < numPlayers; i++) {
   players.push({
     id: i,
@@ -141,19 +176,23 @@ function updatePositions() {
 
 // Atualiza o painel de dinheiro e propriedades (com destaque para o jogador da vez)
 function updateMoney() {
-  moneyBoard.innerHTML = '';
+  moneyBoard.innerHTML = ''; // limpa o painel
+
   players.forEach((p, i) => {
     const d = document.createElement('div');
     d.className = 'player-money';
     if (i === currentPlayerIndex) {
-      d.classList.add('active-player'); // destaque neon para o jogador da vez
+      d.classList.add('active-player'); // adiciona destaque ao jogador atual
     }
-    d.innerHTML = `<div class="player-name">${p.emoji} Jogador ${p.id + 1}</div>
-                   <div>Dinheiro: $${p.money}</div>
-                   <div>Props: ${p.properties.join(', ') || 'Nenhuma'}</div>`;
+    d.innerHTML = `
+      <div class="player-name">${p.emoji} Jogador ${p.id + 1}</div>
+      <div>Dinheiro: $${p.money}</div>
+      <div>Props: ${p.properties.length > 0 ? p.properties.map(String).join(', ') : 'Nenhuma'}</div>
+    `;
     moneyBoard.appendChild(d);
   });
 }
+
 
 // Rola o dado (valor entre 1 e 6)
 function rollDice() {
@@ -181,9 +220,10 @@ function nextTurn() {
   rollDiceBtn.disabled = false;
   rollDiceBtn.style.display = 'block';
   turnMessage.textContent = `Vez do Jogador ${cp.id + 1} ${cp.emoji}. Clique para rolar o dado.`;
-  updateMoney(); // atualiza o destaque do painel
+  updateMoney(); // <-- ISSO é o que garante que o destaque funcione!
   showNotice(`Jogador ${cp.id + 1} ${cp.emoji} vai jogar!`);
 }
+
 
 // Move o jogador e trata a ação da casa
 function handleMove(player, steps) {
