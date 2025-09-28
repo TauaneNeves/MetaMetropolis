@@ -18,26 +18,48 @@ app.get('/', (req, res) => {
 
 const cols = 12, rows = 8;
 const totalTiles = (cols + rows - 2) * 2;
-const properties = {};
-for (let i = 0; i < totalTiles; i++) {
-  if (i % 5 !== 0) {
-    properties[i] = { 
-      id: i,
-      price: 100 + i * 10, 
-      owner: null,
-      level: 0,
-      rent: 10 + i * 2,
-      buildCost: 50 + i * 5
-    };
-  }
-}
-const eventIndexes = [...Array(totalTiles).keys()].filter(i => i % 5 === 0 && i !== 0);
+
+const baseProperties = {
+  1: { id: 1, name: "Torre de Néon", group: "Ciano", price: 120, rent: 15, buildCost: 60 },
+  2: { id: 2, name: "Plataforma de Drons", group: "Ciano", price: 130, rent: 18, buildCost: 65 },
+  3: { id: 3, name: "Mercado de Hologramas", group: "Ciano", price: 140, rent: 20, buildCost: 70 },
+  4: { id: 4, name: "Setor Magenta", group: "Magenta", price: 160, rent: 22, buildCost: 80 },
+  6: { id: 6, name: "Laboratório de IA", group: "Magenta", price: 170, rent: 25, buildCost: 85 },
+  7: { id: 7, name: "Fábrica de Androides", group: "Magenta", price: 180, rent: 28, buildCost: 90 },
+  8: { id: 8, name: "Centro de Sinapse", group: "Amarelo", price: 200, rent: 30, buildCost: 100 },
+  9: { id: 9, name: "Rede Neural Central", group: "Amarelo", price: 210, rent: 32, buildCost: 105 },
+  11: { id: 11, name: "Torre de Dados", group: "Amarelo", price: 220, rent: 35, buildCost: 110 },
+  12: { id: 12, name: "Porto Espacial", group: "Verde", price: 250, rent: 40, buildCost: 120 },
+  13: { id: 13, name: "Jardins Verticais", group: "Verde", price: 260, rent: 42, buildCost: 125 },
+  14: { id: 14, name: "Complexo Bio-Domus", group: "Verde", price: 280, rent: 45, buildCost: 130 },
+  16: { id: 16, name: "Autoestrada Magnética", group: "Laranja", price: 300, rent: 50, buildCost: 150 },
+  17: { id: 17, name: "Hub de Hyperloop", group: "Laranja", price: 310, rent: 55, buildCost: 155 },
+  18: { id: 18, name: "Campo de Antimatéria", group: "Laranja", price: 320, rent: 60, buildCost: 160 },
+  19: { id: 19, name: "Reator de Fusão", group: "Vermelho", price: 340, rent: 65, buildCost: 170 },
+  21: { id: 21, name: "Satélite Quântico", group: "Vermelho", price: 350, rent: 70, buildCost: 175 },
+  22: { id: 22, name: "Matriz de Energia", group: "Vermelho", price: 360, rent: 75, buildCost: 180 },
+  23: { id: 23, name: "Torre Ark", group: "Azul", price: 400, rent: 80, buildCost: 200 },
+  24: { id: 24, name: "Complexo Orbital", group: "Azul", price: 420, rent: 90, buildCost: 210 },
+  26: { id: 26, name: "Mina de Hélio-3", group: "Roxo", price: 450, rent: 100, buildCost: 220 },
+  27: { id: 27, name: "Cidade de Titânio", group: "Roxo", price: 475, rent: 110, buildCost: 230 },
+};
+
+let properties = {};
+
+// --- LISTA DE EVENTOS REDUZIDA PARA EXATAMENTE 5 ---
+const eventIndexes = [5, 12, 18, 27, 34]; // Escolha os números das casas que quer que sejam eventos
 
 let gameState = {};
 let gameInProgress = false;
 let turnInProgress = false;
 
 function initializeGame(settings) {
+  properties = JSON.parse(JSON.stringify(baseProperties));
+  Object.values(properties).forEach(prop => {
+    prop.level = 0;
+    prop.owner = null;
+  });
+
   const players = [];
   for (let i = 0; i < settings.numPlayers; i++) {
     players.push({
@@ -53,6 +75,8 @@ function initializeGame(settings) {
   gameState = {
     players: players,
     currentPlayerIndex: 0,
+    properties: properties,
+    eventIndexes: eventIndexes // Envia a lista de eventos para o cliente
   };
 
   gameInProgress = true;
@@ -126,21 +150,22 @@ function handleMove(player, steps) {
             io.emit('gameUpdate', gameState);
             if (!checkVictory()) setTimeout(nextTurn, 2000);
         } else {
+            // Se não for propriedade nem evento, apenas passa a vez
             if (!checkVictory()) setTimeout(nextTurn, 1500);
         }
     }, (steps + 1) * 160);
 }
 
-// --- FUNÇÃO TRANSACT ATUALIZADA COM A NOVA LÓGICA ---
 function transact(player, pos) {
     const prop = properties[pos];
     
-    if (prop.owner === null) { // Propriedade por comprar
+    if (prop.owner === null) {
         if (player.playerType === 'ia') {
             if (player.money >= prop.price) {
                 player.money -= prop.price;
                 prop.owner = player.id;
-                prop.level = 1; // IA compra e já vai para o Nível 1
+                prop.level = 1;
+                prop.rent = Math.floor(prop.rent * 1.8);
                 player.properties.push(prop);
                 io.emit('showNotice', `Jogador ${player.id + 1} (IA) comprou a casa ${pos}!`);
                 io.emit('gameUpdate', gameState);
@@ -148,17 +173,15 @@ function transact(player, pos) {
             if (!checkVictory()) setTimeout(nextTurn, 1000);
         } else {
             if (player.money >= prop.price) {
-                io.to(player.socketId).emit('offerPurchase', { pos, price: prop.price, playerId: player.id });
+                io.to(player.socketId).emit('offerPurchase', { pos, price: prop.price, name: prop.name, playerId: player.id });
             } else {
                 io.emit('showNotice', `Jogador ${player.id + 1} não tem dinheiro para comprar.`);
                 setTimeout(nextTurn, 2000);
             }
         }
-    } else if (prop.owner === player.id) { // Jogador caiu na sua própria propriedade
+    } else if (prop.owner === player.id) {
         if (prop.level < 5) {
-            // Lógica de melhoria
             if (player.playerType === 'ia') {
-                // IA melhora se tiver pelo menos o dobro do custo
                 if (player.money >= prop.buildCost * 2) {
                     player.money -= prop.buildCost;
                     prop.level += 1;
@@ -168,15 +191,13 @@ function transact(player, pos) {
                 }
                 if (!checkVictory()) setTimeout(nextTurn, 1000);
             } else {
-                // Envia oferta de melhoria para o jogador humano
-                io.to(player.socketId).emit('offerImprovement', { pos, level: prop.level, cost: prop.buildCost, playerId: player.id });
+                io.to(player.socketId).emit('offerImprovement', { pos, name: prop.name, level: prop.level, cost: prop.buildCost, playerId: player.id });
             }
         } else {
-            // Propriedade já está no nível máximo
             io.emit('showNotice', `Propriedade ${pos} já está no nível máximo!`);
             setTimeout(nextTurn, 1500);
         }
-    } else { // Pagar aluguer a outro jogador
+    } else {
         const rent = prop.rent;
         player.money -= rent;
         gameState.players.find(p => p.id === prop.owner).money += rent;
@@ -236,10 +257,10 @@ io.on('connection', (socket) => {
         if (decision.buy && player.money >= prop.price) {
             player.money -= prop.price;
             prop.owner = player.id;
-            prop.level = 1; // Propriedade já começa no Nível 1
-            prop.rent = Math.floor(prop.rent * 1.8); // Aumenta o aluguer inicial
+            prop.level = 1;
+            prop.rent = Math.floor(prop.rent * 1.8);
             player.properties.push(prop);
-            io.emit('showNotice', `Jogador ${player.id + 1} comprou a casa ${decision.pos}!`);
+            io.emit('showNotice', `Jogador ${player.id + 1} comprou "${prop.name}"!`);
         } else {
             io.emit('showNotice', `Jogador ${player.id + 1} recusou a compra.`);
         }
@@ -248,7 +269,6 @@ io.on('connection', (socket) => {
         if (!checkVictory()) setTimeout(nextTurn, 1000);
     });
     
-   // --- NOVO OUVINTE PARA A DECISÃO DE MELHORIA ---
    socket.on('improveDecision', (decision) => {
         const player = gameState.players.find(p => p.id === decision.playerId);
         const prop = properties[decision.pos];
@@ -258,7 +278,7 @@ io.on('connection', (socket) => {
             player.money -= prop.buildCost;
             prop.level += 1;
             prop.rent = Math.floor(prop.rent * 1.8);
-            io.emit('showNotice', `Jogador ${player.id + 1} melhorou a propriedade ${decision.pos}!`);
+            io.emit('showNotice', `Jogador ${player.id + 1} melhorou "${prop.name}"!`);
         } else {
             io.emit('showNotice', `Jogador ${player.id + 1} não fez a melhoria.`);
         }

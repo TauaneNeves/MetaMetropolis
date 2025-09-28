@@ -14,7 +14,6 @@ const noticeText = document.getElementById('notice-text');
 const historyBox = document.getElementById('history');
 const victoryScreen = document.getElementById('victory-screen');
 const winnerMessage = document.getElementById('winner-message');
-// Variáveis do painel de gestão foram removidas
 
 let currentGameState = {};
 const cols = 12, rows = 8;
@@ -48,8 +47,11 @@ function updateHistory() {
     historyBox.innerHTML = messageLog.map(msg => `<div>${msg}</div>`).join('');
 }
 
-function createBoard() {
+// --- FUNÇÃO ATUALIZADA PARA USAR A LISTA DE EVENTOS DO SERVIDOR ---
+function createBoard(properties, eventIndexes) {
     board.innerHTML = '';
+    tiles = [];
+    
     for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
             let num = null;
@@ -65,13 +67,30 @@ function createBoard() {
             if (num !== null && num < totalTiles) {
                 div.classList.add('tile');
                 div.id = `tile-${num}`;
-                div.textContent = num;
+                
+                const prop = properties[num];
+                if (prop) {
+                    div.innerHTML = `
+                        <div class="color-bar ${prop.group}"></div>
+                        <div class="prop-name">${prop.name}</div>
+                        <div class="prop-price">$${prop.price}</div>
+                    `;
+                } else if (eventIndexes.includes(num)) {
+                    // Desenha "Evento" apenas se o número estiver na lista de eventos
+                    div.textContent = "Evento";
+                } else {
+                    // Para outras casas (como Início, etc.)
+                    if (num === 0) div.textContent = "Início";
+                    // Deixa outras casas em branco ou com outro texto
+                }
+                
                 tiles[num] = div;
             }
             board.appendChild(div);
         }
     }
 }
+
 
 function createOrUpdatePlayers(players) {
   players.forEach(p => {
@@ -147,6 +166,11 @@ function updateUI(gameState) {
     if (!gameState || !gameState.players) return;
     currentGameState = gameState;
     
+    // --- LÓGICA DE CRIAÇÃO DO TABULEIRO CORRIGIDA ---
+    if (tiles.length === 0) {
+        createBoard(gameState.properties, gameState.eventIndexes);
+    }
+    
     createOrUpdatePlayers(gameState.players);
     gameState.players.forEach(p => updatePlayerPosition(p));
     updateMoney(gameState.players, gameState.currentPlayerIndex);
@@ -155,20 +179,16 @@ function updateUI(gameState) {
     turnMessage.textContent = `Vez do Jogador ${cp.id + 1}`;
     rollDiceBtn.disabled = gameState.currentPlayerIndex !== localPlayerId;
 
-    // A lógica do botão de gestão foi removida
-
-    tiles.forEach(tile => {
+    Object.values(gameState.properties).forEach(prop => {
+        const tile = document.getElementById(`tile-${prop.id}`);
         if (tile) {
+            // Limpa estilos de dono para evitar sobreposição
             tile.className = 'tile';
             const oldImprovements = tile.querySelector('.improvements');
             if (oldImprovements) oldImprovements.remove();
-        }
-    });
-    gameState.players.forEach(player => {
-        player.properties.forEach(prop => {
-            const tile = document.getElementById(`tile-${prop.id}`);
-            if (tile) {
-                tile.classList.add(`owned-by-${player.id}`);
+
+            if (prop.owner !== null) {
+                tile.classList.add(`owned-by-${prop.owner}`);
                 if (prop.level > 0) {
                     const improvementDiv = document.createElement('div');
                     improvementDiv.className = 'improvements';
@@ -176,7 +196,7 @@ function updateUI(gameState) {
                     tile.appendChild(improvementDiv);
                 }
             }
-        });
+        }
     });
 }
 
@@ -184,8 +204,6 @@ rollDiceBtn.addEventListener('click', () => {
     rollDiceBtn.disabled = true;
     socket.emit('rollDice', localPlayerId);
 });
-
-// A lógica do painel de gestão foi removida
 
 socket.on('playerAssigned', (data) => {
     localPlayerId = data.playerId;
@@ -207,7 +225,7 @@ socket.on('showNotice', (message) => {
 
 socket.on('offerPurchase', (data) => {
     if (data.playerId !== localPlayerId) return;
-    modalText.textContent = `Deseja comprar a propriedade ${data.pos} por $${data.price}?`;
+    modalText.innerHTML = `Deseja comprar <strong>${data.name}</strong> por $${data.price}?`;
     buyYesBtn.textContent = "Comprar";
     buyNoBtn.textContent = "Recusar";
     buyModal.style.display = 'block';
@@ -225,11 +243,9 @@ socket.on('offerPurchase', (data) => {
     };
 });
 
-// --- NOVO OUVINTE PARA OFERTA DE MELHORIA ---
 socket.on('offerImprovement', (data) => {
     if (data.playerId !== localPlayerId) return;
-    
-    modalText.innerHTML = `Você está na sua propriedade ${data.pos}.<br>Deseja melhorar para o Nível ${data.level + 1} por $${data.cost}?`;
+    modalText.innerHTML = `Você está em <strong>${data.name}</strong>.<br>Deseja melhorar para o Nível ${data.level + 1} por $${data.cost}?`;
     buyYesBtn.textContent = "Melhorar";
     buyNoBtn.textContent = "Não, obrigado";
     buyModal.style.display = 'block';
@@ -247,11 +263,8 @@ socket.on('offerImprovement', (data) => {
     };
 });
 
-
 socket.on('gameOver', (data) => {
     winnerMessage.textContent = data.message;
     victoryScreen.style.display = 'flex';
     rollDiceBtn.disabled = true;
 });
-
-createBoard();
