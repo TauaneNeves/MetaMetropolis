@@ -14,12 +14,9 @@ const noticeText = document.getElementById('notice-text');
 const historyBox = document.getElementById('history');
 const victoryScreen = document.getElementById('victory-screen');
 const winnerMessage = document.getElementById('winner-message');
-const manageBtn = document.getElementById('manage-btn');
-const managePanel = document.getElementById('manage-panel');
-const propertyList = document.getElementById('property-list');
-const closeManageBtn = document.getElementById('close-manage-btn');
-let currentGameState = {}; // Guarda o estado do jogo para uso local
+// Variáveis do painel de gestão foram removidas
 
+let currentGameState = {};
 const cols = 12, rows = 8;
 const totalTiles = (cols + rows - 2) * 2;
 let tiles = [];
@@ -157,27 +154,21 @@ function updateUI(gameState) {
     const cp = gameState.players[gameState.currentPlayerIndex];
     turnMessage.textContent = `Vez do Jogador ${cp.id + 1}`;
     rollDiceBtn.disabled = gameState.currentPlayerIndex !== localPlayerId;
-    manageBtn.style.display = gameState.currentPlayerIndex === localPlayerId ? 'block' : 'none';
 
-    // --- CÓDIGO CORRIGIDO PARA MOSTRAR O BRILHO E AS MELHORIAS ---
+    // A lógica do botão de gestão foi removida
+
     tiles.forEach(tile => {
         if (tile) {
-            // Limpa todos os estilos de dono e melhorias antigas
             tile.className = 'tile';
             const oldImprovements = tile.querySelector('.improvements');
             if (oldImprovements) oldImprovements.remove();
         }
     });
-
-    // Adiciona os novos estilos para cada jogador
     gameState.players.forEach(player => {
         player.properties.forEach(prop => {
             const tile = document.getElementById(`tile-${prop.id}`);
             if (tile) {
-                // Adiciona a classe que dá o brilho na cor do jogador
                 tile.classList.add(`owned-by-${player.id}`);
-                
-                // Adiciona os ícones de melhoria (casas/arranha-céu)
                 if (prop.level > 0) {
                     const improvementDiv = document.createElement('div');
                     improvementDiv.className = 'improvements';
@@ -194,43 +185,7 @@ rollDiceBtn.addEventListener('click', () => {
     socket.emit('rollDice', localPlayerId);
 });
 
-manageBtn.addEventListener('click', () => {
-    const localPlayer = currentGameState.players.find(p => p.id === localPlayerId);
-    if (!localPlayer) return;
-
-    propertyList.innerHTML = '';
-    if (localPlayer.properties.length === 0) {
-        propertyList.innerHTML = "<p>Você não possui nenhuma propriedade.</p>";
-    } else {
-        localPlayer.properties.forEach(prop => {
-            const item = document.createElement('div');
-            item.className = 'property-item';
-            const upgradeButton = prop.level < 5
-                ? `<button class="upgrade-btn" data-propid="${prop.id}">Melhorar ($${prop.buildCost})</button>`
-                : `<span>(MAX)</span>`;
-            item.innerHTML = `
-                <span>Prop. ${prop.id} (Nível: ${prop.level})</span>
-                ${upgradeButton}
-            `;
-            propertyList.appendChild(item);
-        });
-    }
-
-    document.querySelectorAll('.upgrade-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const propId = e.target.dataset.propid;
-            socket.emit('improveProperty', propId);
-            managePanel.style.display = 'none';
-        });
-    });
-
-    managePanel.style.display = 'flex';
-});
-
-closeManageBtn.addEventListener('click', () => {
-    managePanel.style.display = 'none';
-});
-
+// A lógica do painel de gestão foi removida
 
 socket.on('playerAssigned', (data) => {
     localPlayerId = data.playerId;
@@ -252,7 +207,9 @@ socket.on('showNotice', (message) => {
 
 socket.on('offerPurchase', (data) => {
     if (data.playerId !== localPlayerId) return;
-    modalText.textContent = `Deseja comprar a casa ${data.pos} por $${data.price}?`;
+    modalText.textContent = `Deseja comprar a propriedade ${data.pos} por $${data.price}?`;
+    buyYesBtn.textContent = "Comprar";
+    buyNoBtn.textContent = "Recusar";
     buyModal.style.display = 'block';
     setTimeout(() => buyModal.classList.add('visible'), 10);
 
@@ -267,6 +224,29 @@ socket.on('offerPurchase', (data) => {
         setTimeout(() => { buyModal.style.display = 'none'; }, 300);
     };
 });
+
+// --- NOVO OUVINTE PARA OFERTA DE MELHORIA ---
+socket.on('offerImprovement', (data) => {
+    if (data.playerId !== localPlayerId) return;
+    
+    modalText.innerHTML = `Você está na sua propriedade ${data.pos}.<br>Deseja melhorar para o Nível ${data.level + 1} por $${data.cost}?`;
+    buyYesBtn.textContent = "Melhorar";
+    buyNoBtn.textContent = "Não, obrigado";
+    buyModal.style.display = 'block';
+    setTimeout(() => buyModal.classList.add('visible'), 10);
+
+    buyYesBtn.onclick = () => {
+        socket.emit('improveDecision', { improve: true, pos: data.pos, playerId: localPlayerId });
+        buyModal.classList.remove('visible');
+        setTimeout(() => { buyModal.style.display = 'none'; }, 300);
+    };
+    buyNoBtn.onclick = () => {
+        socket.emit('improveDecision', { improve: false, pos: data.pos, playerId: localPlayerId });
+        buyModal.classList.remove('visible');
+        setTimeout(() => { buyModal.style.display = 'none'; }, 300);
+    };
+});
+
 
 socket.on('gameOver', (data) => {
     winnerMessage.textContent = data.message;

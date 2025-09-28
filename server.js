@@ -18,8 +18,6 @@ app.get('/', (req, res) => {
 
 const cols = 12, rows = 8;
 const totalTiles = (cols + rows - 2) * 2;
-
-// --- ESTRUTURA DE PROPRIEDADES ATUALIZADA ---
 const properties = {};
 for (let i = 0; i < totalTiles; i++) {
   if (i % 5 !== 0) {
@@ -27,9 +25,9 @@ for (let i = 0; i < totalTiles; i++) {
       id: i,
       price: 100 + i * 10, 
       owner: null,
-      level: 0, // Nível de melhoria (0 = sem melhorias, 1-4 = casas, 5 = arranha-céu)
-      rent: 10 + i * 2, // Aluguer base
-      buildCost: 50 + i * 5 // Custo para construir uma casa
+      level: 0,
+      rent: 10 + i * 2,
+      buildCost: 50 + i * 5
     };
   }
 }
@@ -46,7 +44,7 @@ function initializeGame(settings) {
       id: i,
       position: 0,
       money: 1500,
-      properties: [], // Agora irá guardar os objetos completos das propriedades
+      properties: [],
       playerType: settings.players[i],
       socketId: null
     });
@@ -133,15 +131,17 @@ function handleMove(player, steps) {
     }, (steps + 1) * 160);
 }
 
+// --- FUNÇÃO TRANSACT ATUALIZADA COM A NOVA LÓGICA ---
 function transact(player, pos) {
     const prop = properties[pos];
     
-    if (prop.owner === null) {
+    if (prop.owner === null) { // Propriedade por comprar
         if (player.playerType === 'ia') {
             if (player.money >= prop.price) {
                 player.money -= prop.price;
                 prop.owner = player.id;
-                player.properties.push(prop); // Adiciona o objeto completo
+                prop.level = 1; // IA compra e já vai para o Nível 1
+                player.properties.push(prop);
                 io.emit('showNotice', `Jogador ${player.id + 1} (IA) comprou a casa ${pos}!`);
                 io.emit('gameUpdate', gameState);
             }
@@ -154,15 +154,35 @@ function transact(player, pos) {
                 setTimeout(nextTurn, 2000);
             }
         }
-    } else if (prop.owner !== player.id) {
-        const rent = prop.rent; // Usa o aluguer atualizado
+    } else if (prop.owner === player.id) { // Jogador caiu na sua própria propriedade
+        if (prop.level < 5) {
+            // Lógica de melhoria
+            if (player.playerType === 'ia') {
+                // IA melhora se tiver pelo menos o dobro do custo
+                if (player.money >= prop.buildCost * 2) {
+                    player.money -= prop.buildCost;
+                    prop.level += 1;
+                    prop.rent = Math.floor(prop.rent * 1.8);
+                    io.emit('showNotice', `Jogador ${player.id + 1} (IA) melhorou a propriedade ${pos}!`);
+                    io.emit('gameUpdate', gameState);
+                }
+                if (!checkVictory()) setTimeout(nextTurn, 1000);
+            } else {
+                // Envia oferta de melhoria para o jogador humano
+                io.to(player.socketId).emit('offerImprovement', { pos, level: prop.level, cost: prop.buildCost, playerId: player.id });
+            }
+        } else {
+            // Propriedade já está no nível máximo
+            io.emit('showNotice', `Propriedade ${pos} já está no nível máximo!`);
+            setTimeout(nextTurn, 1500);
+        }
+    } else { // Pagar aluguer a outro jogador
+        const rent = prop.rent;
         player.money -= rent;
         gameState.players.find(p => p.id === prop.owner).money += rent;
         io.emit('showNotice', `Pagou $${rent} de aluguer ao Jogador ${prop.owner + 1}.`);
         io.emit('gameUpdate', gameState);
         if (!checkVictory()) setTimeout(nextTurn, 2000);
-    } else {
-        setTimeout(nextTurn, 1500);
     }
 }
 
@@ -209,15 +229,16 @@ io.on('connection', (socket) => {
   });
   
    socket.on('purchaseDecision', (decision) => {
-        if (decision.playerId !== gameState.currentPlayerIndex) return;
-
-        const player = gameState.players[gameState.currentPlayerIndex];
+        const player = gameState.players.find(p => p.id === decision.playerId);
         const prop = properties[decision.pos];
+        if (!player || !prop) return;
 
         if (decision.buy && player.money >= prop.price) {
             player.money -= prop.price;
             prop.owner = player.id;
-            player.properties.push(prop); // Adiciona o objeto completo
+            prop.level = 1; // Propriedade já começa no Nível 1
+            prop.rent = Math.floor(prop.rent * 1.8); // Aumenta o aluguer inicial
+            player.properties.push(prop);
             io.emit('showNotice', `Jogador ${player.id + 1} comprou a casa ${decision.pos}!`);
         } else {
             io.emit('showNotice', `Jogador ${player.id + 1} recusou a compra.`);
@@ -227,29 +248,24 @@ io.on('connection', (socket) => {
         if (!checkVictory()) setTimeout(nextTurn, 1000);
     });
     
-   // --- NOVO OUVINTE DE EVENTO PARA MELHORIAS ---
-   socket.on('improveProperty', (propertyId) => {
-        if (!gameInProgress || turnInProgress) return;
+   // --- NOVO OUVINTE PARA A DECISÃO DE MELHORIA ---
+   socket.on('improveDecision', (decision) => {
+        const player = gameState.players.find(p => p.id === decision.playerId);
+        const prop = properties[decision.pos];
+        if (!player || !prop) return;
 
-        const player = gameState.players[gameState.currentPlayerIndex];
-        if (!player || player.socketId !== socket.id) return;
-
-        const prop = properties[propertyId];
-        // Verifica se a propriedade pertence ao jogador e não está no nível máximo
-        if (!prop || prop.owner !== player.id || prop.level >= 5) return;
-
-        if (player.money >= prop.buildCost) {
+        if (decision.improve && player.money >= prop.buildCost) {
             player.money -= prop.buildCost;
             prop.level += 1;
-            prop.rent = Math.floor(prop.rent * 1.8); // Aumenta o aluguer
-
-            io.emit('showNotice', `Jogador ${player.id + 1} construiu na propriedade ${propertyId}!`);
-            io.emit('gameUpdate', gameState);
+            prop.rent = Math.floor(prop.rent * 1.8);
+            io.emit('showNotice', `Jogador ${player.id + 1} melhorou a propriedade ${decision.pos}!`);
         } else {
-            // Envia a mensagem apenas para o jogador que tentou a ação
-            socket.emit('showNotice', "Dinheiro insuficiente para esta melhoria.");
+            io.emit('showNotice', `Jogador ${player.id + 1} não fez a melhoria.`);
         }
-    });
+
+        io.emit('gameUpdate', gameState);
+        if (!checkVictory()) setTimeout(nextTurn, 1000);
+   });
 
   socket.on('disconnect', () => {
     console.log('Jogador desconectado:', socket.id);

@@ -45,7 +45,7 @@ h1 {
 .tile {
   width: 100px;
   height: 80px;
-  background: rgba(0, 85, 119, 0.8); /* Fundo semi-transparente */
+  background: rgba(0, 85, 119, 0.8);
   border: 2px solid #00aaff;
   border-radius: 8px;
   color: #ccf5ff;
@@ -54,7 +54,7 @@ h1 {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  position: relative; /* Para posicionar as melhorias */
+  position: relative;
 }
 
 .player {
@@ -87,7 +87,7 @@ h1 {
   border-radius: 12px;
   display: flex;
   flex-direction: column;
-  gap: 15px; /* Ajuste no espaçamento */
+  gap: 15px;
 }
 
 #dice-result {
@@ -117,7 +117,7 @@ h1 {
   text-align: left;
 }
 
-#roll-dice, #manage-btn {
+#roll-dice {
   font-size: 16px;
   padding: 8px 12px;
   border: none;
@@ -130,7 +130,7 @@ h1 {
   width: 100%;
 }
 
-#roll-dice:hover, #manage-btn:hover {
+#roll-dice:hover {
   background: #0088cc;
   transform: scale(1.05);
 }
@@ -139,7 +139,7 @@ h1 {
   position: fixed;
   top: 50%;
   left: 50%;
-  width: 300px;
+  width: 350px; /* Um pouco maior para o texto novo */
   transform: translate(-50%, -50%);
   background: #004466;
   padding: 20px;
@@ -174,11 +174,12 @@ h1 {
 }
 
 #buy-modal button {
-  margin: 0 5px;
-  padding: 6px 12px;
+  margin: 10px 5px 0 5px; /* Adiciona margem no topo */
+  padding: 8px 16px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
+  font-size: 1rem;
 }
 
 #buy-yes {
@@ -192,16 +193,9 @@ h1 {
 }
 
 #victory-screen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.85);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.85); display: flex;
+  justify-content: center; align-items: center; z-index: 9999;
 }
 
 .player, .player img {
@@ -231,26 +225,9 @@ h1 {
 .tile.owned-by-2 { box-shadow: inset 0 0 15px 3px #4dff4d, 0 0 10px #4dff4d; border-color: #4dff4d; }
 .tile.owned-by-3 { box-shadow: inset 0 0 15px 3px #ffff4d, 0 0 10px #ffff4d; border-color: #ffff4d; }
 
-/* --- NOVOS ESTILOS PARA GESTÃO DE PROPRIEDADES --- */
-.modal {
-  position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%;
-  background-color: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;
-}
-.modal-content {
-  background: #00334d; padding: 30px; border-radius: 12px; border: 2px solid #00eaff;
-  box-shadow: 0 0 25px #00eaff; width: 90%; max-width: 450px; text-align: center;
-}
-.modal-content h2 { color: #00eaff; margin-top: 0; }
-.modal-content button { margin-top: 20px; padding: 10px 25px; font-size: 1rem; }
-
-#manage-btn { background-color: #9933ff; }
-#property-list { max-height: 300px; overflow-y: auto; text-align: left; margin-top: 20px; }
-.property-item {
-  background: #005577; padding: 10px; margin-bottom: 8px; border-radius: 6px;
-  display: flex; justify-content: space-between; align-items: center;
-}
-.property-item button { font-size: 0.8rem; padding: 5px 10px; margin: 0; }
 .improvements {
     position: absolute; bottom: 2px; left: 2px; font-size: 12px;
     text-shadow: 1px 1px 2px black;
 }
+
+/* Os estilos do painel de gestão foram removidos */
