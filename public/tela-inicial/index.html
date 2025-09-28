@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Metametropolis - Tela Inicial</title>
+  <link rel="stylesheet" href="/tela-inicial/style.css" />
+</head>
+<body>
+  <div class="logo">
+    <h1>Metametropolis</h1>
+    <p class="subtitle">Cidade do Futuro</p>
+  </div>
+
+  <div class="buttons">
+    <button id="playBtn">Play</button>
+    <button id="settingsBtn">Ajustes</button>
+  </div>
+
+  <div class="settings-panel" id="settingsPanel">
+    <label for="numPlayers">Número de Jogadores:</label>
+    <select id="numPlayers">
+      <option value="2">2 Jogadores</option>
+      <option value="3">3 Jogadores</option>
+      <option value="4">4 Jogadores</option>
+    </select>
+
+    <div id="playersConfig">
+      <div class="player-select">
+        <label for="player1">Jogador 1:</label>
+        <select id="player1">
+          <option value="local">Jogador Local</option>
+          <option value="ia">IA</option>
+        </select>
+      </div>
+
+      <div class="player-select">
+        <label for="player2">Jogador 2:</label>
+        <select id="player2">
+          <option value="local">Jogador Local</option>
+          <option value="ia">IA</option>
+        </select>
+      </div>
+
+      <div class="player-select" id="player3-container">
+        <label for="player3">Jogador 3:</label>
+        <select id="player3">
+          <option value="local">Jogador Local</option>
+          <option value="ia">IA</option>
+        </select>
+      </div>
+
+      <div class="player-select" id="player4-container">
+        <label for="player4">Jogador 4:</label>
+        <select id="player4">
+          <option value="local">Jogador Local</option>
+          <option value="ia">IA</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/tela-inicial/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MetaMetropolis - Cidade do Futuro</title>
+  <link rel="stylesheet" href="/jogo/style.css" />
+</head>
+<body>
+  <h1>MetaMetropolis - Cidade do Futuro</h1>
+
+  <div id="game-container">
+    <div id="board"></div>
+    <div id="side-panel">
+      <div id="turn-message">Aguardando início do jogo...</div>
+      <button id="roll-dice" disabled>Rolar Dado 🎲</button>
+      <div id="dice-result"></div>
+      <div id="money-board"></div>
+      <div id="history"></div>
+    </div>
+
+    <div id="buy-modal" style="display:none;">
+      <p id="modal-text"></p>
+      <button id="buy-yes">Comprar</button>
+      <button id="buy-no">Recusar</button>
+    </div>
+
+    <div id="action-notice" style="display:none;">
+      <p id="notice-text"></p>
+    </div>
+    
+    <div id="victory-screen" style="display:none;">
+        <div id="winner-message"></div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/jogo/script.js"></script>
+</body>
+</html>
