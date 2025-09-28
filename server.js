@@ -18,14 +18,26 @@ app.get('/', (req, res) => {
 
 const cols = 12, rows = 8;
 const totalTiles = (cols + rows - 2) * 2;
+
+// --- ESTRUTURA DE PROPRIEDADES ATUALIZADA ---
 const properties = {};
 for (let i = 0; i < totalTiles; i++) {
-  if (i % 5 !== 0) properties[i] = { price: 100 + i * 10, owner: null };
+  if (i % 5 !== 0) {
+    properties[i] = { 
+      id: i,
+      price: 100 + i * 10, 
+      owner: null,
+      level: 0, // Nível de melhoria (0 = sem melhorias, 1-4 = casas, 5 = arranha-céu)
+      rent: 10 + i * 2, // Aluguer base
+      buildCost: 50 + i * 5 // Custo para construir uma casa
+    };
+  }
 }
 const eventIndexes = [...Array(totalTiles).keys()].filter(i => i % 5 === 0 && i !== 0);
 
 let gameState = {};
 let gameInProgress = false;
+let turnInProgress = false;
 
 function initializeGame(settings) {
   const players = [];
@@ -34,7 +46,7 @@ function initializeGame(settings) {
       id: i,
       position: 0,
       money: 1500,
-      properties: [],
+      properties: [], // Agora irá guardar os objetos completos das propriedades
       playerType: settings.players[i],
       socketId: null
     });
@@ -46,6 +58,7 @@ function initializeGame(settings) {
   };
 
   gameInProgress = true;
+  turnInProgress = false;
 }
 
 function rollDice() {
@@ -72,6 +85,7 @@ function nextTurn() {
     io.emit('gameUpdate', gameState);
     io.emit('showNotice', `Vez do Jogador ${currentPlayer.id + 1}.`);
 
+    turnInProgress = false;
     if (currentPlayer.playerType === 'ia') {
       setTimeout(() => {
         playAITurn(currentPlayer);
@@ -80,12 +94,14 @@ function nextTurn() {
 }
 
 function playAITurn(aiPlayer) {
+    if (turnInProgress) return;
+    turnInProgress = true;
+
     io.emit('showNotice', `Jogador ${aiPlayer.id + 1} (IA) está a jogar...`);
     const steps = rollDice();
     io.emit('showNotice', `Jogador ${aiPlayer.id + 1} (IA) tirou ${steps}!`);
     handleMove(aiPlayer, steps);
 }
-
 
 function handleMove(player, steps) {
     const startPos = player.position;
@@ -125,11 +141,9 @@ function transact(player, pos) {
             if (player.money >= prop.price) {
                 player.money -= prop.price;
                 prop.owner = player.id;
-                player.properties.push(pos);
+                player.properties.push(prop); // Adiciona o objeto completo
                 io.emit('showNotice', `Jogador ${player.id + 1} (IA) comprou a casa ${pos}!`);
                 io.emit('gameUpdate', gameState);
-            } else {
-                io.emit('showNotice', `Jogador ${player.id + 1} (IA) não comprou a casa ${pos}.`);
             }
             if (!checkVictory()) setTimeout(nextTurn, 1000);
         } else {
@@ -141,7 +155,7 @@ function transact(player, pos) {
             }
         }
     } else if (prop.owner !== player.id) {
-        const rent = Math.floor(prop.price * 0.2);
+        const rent = prop.rent; // Usa o aluguer atualizado
         player.money -= rent;
         gameState.players.find(p => p.id === prop.owner).money += rent;
         io.emit('showNotice', `Pagou $${rent} de aluguer ao Jogador ${prop.owner + 1}.`);
@@ -181,11 +195,13 @@ io.on('connection', (socket) => {
   });
 
   socket.on('rollDice', (playerId) => {
-    if (!gameInProgress || playerId !== gameState.currentPlayerIndex) return;
+    if (turnInProgress || !gameInProgress || playerId !== gameState.currentPlayerIndex) return;
     
     const player = gameState.players[gameState.currentPlayerIndex];
     if (player.playerType === 'ia') return;
     if (socket.id !== player.socketId) return;
+    
+    turnInProgress = true; 
 
     const steps = rollDice();
     io.emit('showNotice', `Jogador ${player.id + 1} tirou ${steps}!`);
@@ -201,7 +217,7 @@ io.on('connection', (socket) => {
         if (decision.buy && player.money >= prop.price) {
             player.money -= prop.price;
             prop.owner = player.id;
-            player.properties.push(decision.pos);
+            player.properties.push(prop); // Adiciona o objeto completo
             io.emit('showNotice', `Jogador ${player.id + 1} comprou a casa ${decision.pos}!`);
         } else {
             io.emit('showNotice', `Jogador ${player.id + 1} recusou a compra.`);
@@ -209,6 +225,30 @@ io.on('connection', (socket) => {
         
         io.emit('gameUpdate', gameState);
         if (!checkVictory()) setTimeout(nextTurn, 1000);
+    });
+    
+   // --- NOVO OUVINTE DE EVENTO PARA MELHORIAS ---
+   socket.on('improveProperty', (propertyId) => {
+        if (!gameInProgress || turnInProgress) return;
+
+        const player = gameState.players[gameState.currentPlayerIndex];
+        if (!player || player.socketId !== socket.id) return;
+
+        const prop = properties[propertyId];
+        // Verifica se a propriedade pertence ao jogador e não está no nível máximo
+        if (!prop || prop.owner !== player.id || prop.level >= 5) return;
+
+        if (player.money >= prop.buildCost) {
+            player.money -= prop.buildCost;
+            prop.level += 1;
+            prop.rent = Math.floor(prop.rent * 1.8); // Aumenta o aluguer
+
+            io.emit('showNotice', `Jogador ${player.id + 1} construiu na propriedade ${propertyId}!`);
+            io.emit('gameUpdate', gameState);
+        } else {
+            // Envia a mensagem apenas para o jogador que tentou a ação
+            socket.emit('showNotice', "Dinheiro insuficiente para esta melhoria.");
+        }
     });
 
   socket.on('disconnect', () => {

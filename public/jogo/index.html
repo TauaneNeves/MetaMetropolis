@@ -14,6 +14,9 @@
     <div id="side-panel">
       <div id="turn-message">Aguardando início do jogo...</div>
       <button id="roll-dice" disabled>Rolar Dado 🎲</button>
+      
+      <button id="manage-btn" style="display: none;">Gerir Propriedades</button>
+      
       <div id="dice-result"></div>
       <div id="money-board"></div>
       <div id="history"></div>
@@ -24,7 +27,7 @@
       <button id="buy-yes">Comprar</button>
       <button id="buy-no">Recusar</button>
     </div>
-
+    
     <div id="action-notice" style="display:none;">
       <p id="notice-text"></p>
     </div>
@@ -32,9 +35,17 @@
     <div id="victory-screen" style="display:none;">
         <div id="winner-message"></div>
     </div>
+
+    <div id="manage-panel" class="modal" style="display:none;">
+      <div class="modal-content">
+        <h2>Minhas Propriedades</h2>
+        <div id="property-list"></div>
+        <button id="close-manage-btn">Fechar</button>
+      </div>
+    </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/jogo/script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
