@@ -47,8 +47,8 @@ function updateHistory() {
     historyBox.innerHTML = messageLog.map(msg => `<div>${msg}</div>`).join('');
 }
 
-// --- FUNÇÃO ATUALIZADA PARA USAR A LISTA DE EVENTOS DO SERVIDOR ---
-function createBoard(properties, eventIndexes) {
+// --- FUNÇÃO ATUALIZADA PARA DESENHAR AS CASAS ESPECIAIS ---
+function createBoard(properties, eventIndexes, specialTiles) {
     board.innerHTML = '';
     tiles = [];
     
@@ -69,6 +69,8 @@ function createBoard(properties, eventIndexes) {
                 div.id = `tile-${num}`;
                 
                 const prop = properties[num];
+                const special = specialTiles[num];
+
                 if (prop) {
                     div.innerHTML = `
                         <div class="color-bar ${prop.group}"></div>
@@ -76,12 +78,11 @@ function createBoard(properties, eventIndexes) {
                         <div class="prop-price">$${prop.price}</div>
                     `;
                 } else if (eventIndexes.includes(num)) {
-                    // Desenha "Evento" apenas se o número estiver na lista de eventos
-                    div.textContent = "Evento";
+                    div.innerHTML = `🎲<br>Evento`;
+                } else if (special) {
+                    div.innerHTML = `✨<br>${special.name}`;
                 } else {
-                    // Para outras casas (como Início, etc.)
                     if (num === 0) div.textContent = "Início";
-                    // Deixa outras casas em branco ou com outro texto
                 }
                 
                 tiles[num] = div;
@@ -166,9 +167,8 @@ function updateUI(gameState) {
     if (!gameState || !gameState.players) return;
     currentGameState = gameState;
     
-    // --- LÓGICA DE CRIAÇÃO DO TABULEIRO CORRIGIDA ---
     if (tiles.length === 0) {
-        createBoard(gameState.properties, gameState.eventIndexes);
+        createBoard(gameState.properties, gameState.eventIndexes, gameState.specialTiles);
     }
     
     createOrUpdatePlayers(gameState.players);
@@ -182,7 +182,6 @@ function updateUI(gameState) {
     Object.values(gameState.properties).forEach(prop => {
         const tile = document.getElementById(`tile-${prop.id}`);
         if (tile) {
-            // Limpa estilos de dono para evitar sobreposição
             tile.className = 'tile';
             const oldImprovements = tile.querySelector('.improvements');
             if (oldImprovements) oldImprovements.remove();

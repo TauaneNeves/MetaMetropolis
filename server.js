@@ -19,6 +19,7 @@ app.get('/', (req, res) => {
 const cols = 12, rows = 8;
 const totalTiles = (cols + rows - 2) * 2;
 
+// --- LISTA DE PROPRIEDADES AGORA COMPLETA ---
 const baseProperties = {
   1: { id: 1, name: "Torre de Néon", group: "Ciano", price: 120, rent: 15, buildCost: 60 },
   2: { id: 2, name: "Plataforma de Drons", group: "Ciano", price: 130, rent: 18, buildCost: 65 },
@@ -29,25 +30,33 @@ const baseProperties = {
   8: { id: 8, name: "Centro de Sinapse", group: "Amarelo", price: 200, rent: 30, buildCost: 100 },
   9: { id: 9, name: "Rede Neural Central", group: "Amarelo", price: 210, rent: 32, buildCost: 105 },
   11: { id: 11, name: "Torre de Dados", group: "Amarelo", price: 220, rent: 35, buildCost: 110 },
-  12: { id: 12, name: "Porto Espacial", group: "Verde", price: 250, rent: 40, buildCost: 120 },
-  13: { id: 13, name: "Jardins Verticais", group: "Verde", price: 260, rent: 42, buildCost: 125 },
-  14: { id: 14, name: "Complexo Bio-Domus", group: "Verde", price: 280, rent: 45, buildCost: 130 },
+  13: { id: 13, name: "Porto Espacial", group: "Verde", price: 250, rent: 40, buildCost: 120 },
+  14: { id: 14, name: "Jardins Verticais", group: "Verde", price: 260, rent: 42, buildCost: 125 },
   16: { id: 16, name: "Autoestrada Magnética", group: "Laranja", price: 300, rent: 50, buildCost: 150 },
   17: { id: 17, name: "Hub de Hyperloop", group: "Laranja", price: 310, rent: 55, buildCost: 155 },
-  18: { id: 18, name: "Campo de Antimatéria", group: "Laranja", price: 320, rent: 60, buildCost: 160 },
   19: { id: 19, name: "Reator de Fusão", group: "Vermelho", price: 340, rent: 65, buildCost: 170 },
   21: { id: 21, name: "Satélite Quântico", group: "Vermelho", price: 350, rent: 70, buildCost: 175 },
   22: { id: 22, name: "Matriz de Energia", group: "Vermelho", price: 360, rent: 75, buildCost: 180 },
   23: { id: 23, name: "Torre Ark", group: "Azul", price: 400, rent: 80, buildCost: 200 },
   24: { id: 24, name: "Complexo Orbital", group: "Azul", price: 420, rent: 90, buildCost: 210 },
   26: { id: 26, name: "Mina de Hélio-3", group: "Roxo", price: 450, rent: 100, buildCost: 220 },
-  27: { id: 27, name: "Cidade de Titânio", group: "Roxo", price: 475, rent: 110, buildCost: 230 },
+  // --- PROPRIEDADES ADICIONADAS PARA PREENCHER OS ESPAÇOS ---
+  27: { id: 27, name: "Colónia Hiper-Luz", group: "Roxo", price: 460, rent: 105, buildCost: 225 },
+  28: { id: 28, name: "Cidade de Titânio", group: "Roxo", price: 475, rent: 110, buildCost: 230 },
+  29: { id: 29, name: "Central Geotérmica", group: "Branco", price: 500, rent: 120, buildCost: 250 },
+  31: { id: 31, name: "Servidores da Matrix", group: "Branco", price: 520, rent: 130, buildCost: 260 },
+  32: { id: 32, name: "Banco Intergaláctico", group: "Dourado", price: 550, rent: 150, buildCost: 270 },
+  34: { id: 34, name: "O Citadel", group: "Dourado", price: 600, rent: 175, buildCost: 300 },
 };
 
 let properties = {};
 
-// --- LISTA DE EVENTOS REDUZIDA PARA EXATAMENTE 5 ---
-const eventIndexes = [5, 12, 18, 27, 34]; // Escolha os números das casas que quer que sejam eventos
+const eventIndexes = [5, 15, 25, 33]; // Ajustado para 4 eventos
+const specialTiles = {
+    10: { name: "Imposto", fee: 150 },
+    20: { name: "Estacionamento Grátis" },
+    30: { name: "Vá para a Prisão" } // Um novo espaço especial
+};
 
 let gameState = {};
 let gameInProgress = false;
@@ -76,7 +85,8 @@ function initializeGame(settings) {
     players: players,
     currentPlayerIndex: 0,
     properties: properties,
-    eventIndexes: eventIndexes // Envia a lista de eventos para o cliente
+    eventIndexes: eventIndexes,
+    specialTiles: specialTiles
   };
 
   gameInProgress = true;
@@ -149,8 +159,17 @@ function handleMove(player, steps) {
             io.emit('showNotice', `Evento: ${e}`);
             io.emit('gameUpdate', gameState);
             if (!checkVictory()) setTimeout(nextTurn, 2000);
+        } else if (specialTiles[currentTile]) {
+            const special = specialTiles[currentTile];
+            if (special.name === "Imposto") {
+                player.money -= special.fee;
+                io.emit('showNotice', `Imposto! Pagou $${special.fee}.`);
+                io.emit('gameUpdate', gameState);
+            } else {
+                 io.emit('showNotice', `${special.name}!`);
+            }
+            if (!checkVictory()) setTimeout(nextTurn, 2000);
         } else {
-            // Se não for propriedade nem evento, apenas passa a vez
             if (!checkVictory()) setTimeout(nextTurn, 1500);
         }
     }, (steps + 1) * 160);
